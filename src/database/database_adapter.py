@@ -1,32 +1,24 @@
 import sqlite3
 
-# generic database adapter for SQLite, with a generic system so it can be reused for all different commands
 class DatabaseAdapter:
-    def __init__(self, db_name):
-        self.db_name = db_name
-        self.connection = None
+    def __init__(self, db_path):
+        self.connection = sqlite3.connect(db_path)
+        self.cursor = self.connection.cursor()
 
-    def connect(self):
-        self.connection = sqlite3.connect(self.db_name)
+    def select_with_condition(self, columns, table, condition):
+        query = f"SELECT {columns} FROM {table}"
+        if condition:
+            query += f" WHERE {condition}"
+        self.cursor.execute(query)
 
-    def disconnect(self):
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-
-    def execute_query(self, query, params=None):
-        if not self.connection:
-            raise Exception("Database connection is not established.")
-        
-        cursor = self.connection.cursor()
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
+    def insert(self, table, data):
+        columns = ", ".join(data.keys())
+        placeholders = ", ".join("?" for _ in data)
+        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        self.cursor.execute(query, tuple(data.values()))
         self.connection.commit()
-        return cursor.fetchall()
-    
-    def create_table(self, table_name, columns):
-        columns_def = ", ".join([f"{col} {dtype}" for col, dtype in columns.items()])
-        query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_def})"
-        self.execute_query(query)
+
+    def get_one(self):
+        val = self.cursor.fetchone()
+        self.connection.commit()
+        return val

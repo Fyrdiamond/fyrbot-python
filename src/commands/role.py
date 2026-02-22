@@ -23,7 +23,7 @@ class Role(Command):
 
     async def add_role(self, role_name):
         # test if role exists
-        self.db_adapter.select_from_where("id", "roles", Eq("Name", role_name))
+        self.db_adapter.select_with_condition("id", "roles", Eq("Name", role_name))
         result = self.db_adapter.get_one()
         if result:
             return False
